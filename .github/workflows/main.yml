@@ -1,4 +1,5 @@
 
+
 name: Build SalahFocus APK
 
 on:
@@ -7,26 +8,23 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
+
     steps:
-      - name: Download source code
+      - name: Download project
         uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      - name: Update npm
-        run: npm install -g npm@11.6.0
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Build web app
-        run: npm run build
+          node-version: 22
+          package-manager-cache: false
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -37,23 +35,44 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Add Capacitor Android
-        run: |
-          npm install @capacitor/core @capacitor/android
-          npm install -D @capacitor/cli
-          npx cap init SalahFocus com.salahfocus.app --web-dir=dist
-          npx cap add android
-          npx cap sync android
+      - name: Install project dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
-      - name: Build APK
+      - name: Build web app
+        run: npm run build
+
+      - name: Install Capacitor Android tools
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps --no-audit --no-fund
+
+      - name: Create Capacitor configuration if missing
+        shell: bash
         run: |
-          cd android
+          if [ ! -f capacitor.config.ts ] && \
+             [ ! -f capacitor.config.json ] && \
+             [ ! -f capacitor.config.js ]; then
+            npx cap init SalahFocus com.saad.salahfocus --web-dir dist
+          fi
+
+      - name: Add Android platform if missing
+        shell: bash
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Sync Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload SalahFocus APK
         uses: actions/upload-artifact@v4
         with:
-          name: SalahFocus-debug-APK
+          name: SalahFocus-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
+          if-no-files-found: error
+          retention-days: 7
