@@ -1,0 +1,6 @@
+{
+  "name": "SalahFocus",
+  "description": "Modern monochrome prayer focus, Adhan reminders, Ghaflah screen-time reduction, and Salah mat verification app.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
